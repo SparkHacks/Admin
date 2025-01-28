@@ -1,3 +1,7 @@
+# Admin
+
+This is for add admin access to people to manage users in dashboard site.
+
 # Astro Starter Kit: Basics
 
 ```sh
