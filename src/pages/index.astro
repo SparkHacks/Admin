@@ -1,0 +1,83 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { auth } from '../firebase/server';
+
+let adminUsers = null
+let regularUsers = null
+
+let isRealDatabase = (import.meta.env.REAL_DATABASE === "true")? "yes" : "no"
+
+try {
+	const users = await auth.listUsers()
+	adminUsers = users.users.filter(user => user.customClaims && (user.customClaims.admin) === true)
+	regularUsers = users.users.filter (user => !(user.customClaims && (user.customClaims.admin) === true))
+}
+catch (err) {
+	console.error(err)
+}
+---
+
+<Layout>
+	<h1>Is real database: {isRealDatabase}</h1>
+	<h1>Register new user</h1>
+	<button id="register-btn">Sign in with google</button>
+	<h1>Admin users</h1>
+	<form id="admin-form">
+		<input name="email" type="email" placeholder="Type a registered email"/>
+		<input type="radio" id="add" name="action" value="add">
+		<label for="add">Assign admin role</label>
+		<input type="radio" id="remove" name="action" value="remove">
+		<label for="remove">Remove admin role</label>
+		<button type="submit">Submit</button>
+	</form>
+	<h1>List of admin users: {(adminUsers && `#${adminUsers.length}`)}</h1>
+	<ul>
+		{adminUsers?.map(user => <li>{user.email}</li>)}
+	</ul>
+	<h1>List of regular users: {(regularUsers && `#${regularUsers.length}`)}</h1>
+	<ul>
+		{regularUsers?.map(user => <li>{user.email}</li>)}
+	</ul>
+	<script>
+		import { signInWithPopup } from "firebase/auth"
+		import { auth, provider } from "../firebase/client"
+
+		const form = document.getElementById("admin-form") as HTMLFormElement
+		const btn = document.getElementById("register-btn") as HTMLButtonElement
+		btn.addEventListener("click", async () => {
+			try {
+				const userCredential = await signInWithPopup(auth, provider)
+				const email = userCredential.user.email
+				alert(`Successful register new account: ${email}`)
+				window.location.reload()
+			}
+			catch (err) {
+				console.error(err)
+				alert("Something is wrong with register account")
+			}
+		})
+		form?.addEventListener("submit", async (e) => {
+			e.preventDefault()
+			const formData = new FormData(form)
+			try {
+				const res = await fetch("/api/add-user", {
+					method: "POST",
+					body: formData
+				})
+				if (!res.ok) {
+					const msg = await res.text()
+					alert(`Something is wrong with getting user to admin: ${msg}`)
+					return
+				}
+
+				const msg = await res.text()
+				alert(msg)
+				window.location.reload()
+			}
+			catch (err) {
+				console.error(err)
+				alert("Something is wrong with getting user to admin")
+			}
+		})
+	</script>
+</Layout>
