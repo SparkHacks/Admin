@@ -32,6 +32,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         return new Response(`${email}: Successfully remove admin role from user`)
       }
 
+      if (user.customClaims && user.customClaims.exception === true) {
+        return new Response(`${email}: User already is exception`)
+      }
+      
       return new Response(`${email}: User already regular`)
     }
     else { // action is weird

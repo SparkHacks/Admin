@@ -1,14 +1,10 @@
 import type { APIRoute } from "astro";
 import { displayFormData, sendFormToFirestore, validateFormData } from "../../utils/utils";
 import type { FormSubmissionData } from "../../env";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
-  return new Response("Nothing")
-
-
-  /*
   // process form data and destructure it
   const formData = await request.formData()
   const email = formData.get("email")?.toString()
@@ -56,7 +52,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       otherJobType: (jobType === "Other") ? otherJobType : "",
       resumeLink: resumeLink || "",
       appStatus: appStatus,
-      createdAt: FieldValue.serverTimestamp()
+      createdAt: Timestamp.fromDate(new Date("2025-01-24T21:42:18.000Z")) //FieldValue.serverTimestamp() // UTC = Chicago + 6hr
     } as FormSubmissionData
 
     console.log("Submmitting form for:", email)
@@ -71,5 +67,5 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     console.log(`Something is wrong with submitting form for ${email}`, err)
     return new Response(`Something is wrong with submitting form for ${email}`, { status: 500 })
   }
-*/
+
 }

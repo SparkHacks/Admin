@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import { auth } from '../firebase/server';
 
 let adminUsers = null
+let exceptionUsers = null
 let regularUsers = null
 
 let isRealDatabase = (import.meta.env.REAL_DATABASE === "true")? "yes" : "no"
@@ -10,7 +11,8 @@ let isRealDatabase = (import.meta.env.REAL_DATABASE === "true")? "yes" : "no"
 try {
 	const users = await auth.listUsers()
 	adminUsers = users.users.filter(user => user.customClaims && (user.customClaims.admin) === true)
-	regularUsers = users.users.filter (user => !(user.customClaims && (user.customClaims.admin) === true))
+	exceptionUsers = users.users.filter(user => user.customClaims && (user.customClaims.exception) === true)
+	regularUsers = users.users.filter (user => !(user.customClaims && (user.customClaims.admin === true || user.customClaims.exception === true)))
 }
 catch (err) {
 	console.error(err)
@@ -30,9 +32,22 @@ catch (err) {
 		<label for="remove">Remove admin role</label>
 		<button type="submit">Submit</button>
 	</form>
+	<h1>Exception users</h1>
+	<form id="exception-form">
+		<input name="email" type="email" placeholder="Type a registered email"/>
+		<input type="radio" id="add" name="action" value="add">
+		<label for="add">Assign exception role</label>
+		<input type="radio" id="remove" name="action" value="remove">
+		<label for="remove">Remove exception role</label>
+		<button type="submit">Submit</button>
+	</form>
 	<h1>List of admin users: {(adminUsers && `#${adminUsers.length}`)}</h1>
 	<ul>
 		{adminUsers?.map(user => <li>{user.email}</li>)}
+	</ul>
+	<h1>List of exception users: {(exceptionUsers && `#${exceptionUsers.length}`)}</h1>
+	<ul>
+		{exceptionUsers?.map(user => <li>{user.email}</li>)}
 	</ul>
 	<h1>List of regular users: {(regularUsers && `#${regularUsers.length}`)}</h1>
 	<ul>
@@ -42,7 +57,8 @@ catch (err) {
 		import { signInWithPopup } from "firebase/auth"
 		import { auth, provider } from "../firebase/client"
 
-		const form = document.getElementById("admin-form") as HTMLFormElement
+		const adminForm = document.getElementById("admin-form") as HTMLFormElement
+		const exceptionForm = document.getElementById("exception-form") as HTMLFormElement
 		const btn = document.getElementById("register-btn") as HTMLButtonElement
 		btn.addEventListener("click", async () => {
 			try {
@@ -56,11 +72,11 @@ catch (err) {
 				alert("Something is wrong with register account")
 			}
 		})
-		form?.addEventListener("submit", async (e) => {
+		adminForm?.addEventListener("submit", async (e) => {
 			e.preventDefault()
-			const formData = new FormData(form)
+			const formData = new FormData(adminForm)
 			try {
-				const res = await fetch("/api/add-user", {
+				const res = await fetch("/api/modify-admin", {
 					method: "POST",
 					body: formData
 				})
@@ -77,6 +93,30 @@ catch (err) {
 			catch (err) {
 				console.error(err)
 				alert("Something is wrong with getting user to admin")
+			}
+		})
+
+		exceptionForm?.addEventListener("submit", async (e) => {
+			e.preventDefault()
+			const formData = new FormData(exceptionForm)
+			try {
+				const res = await fetch("/api/modify-exception", {
+					method: "POST",
+					body: formData
+				})
+				if (!res.ok) {
+					const msg = await res.text()
+					alert(`Something is wrong with getting user to exception: ${msg}`)
+					return
+				}
+
+				const msg = await res.text()
+				alert(msg)
+				window.location.reload()
+			}
+			catch (err) {
+				console.error(err)
+				alert("Something is wrong with getting user to exception")
 			}
 		})
 	</script>
